@@ -2,9 +2,10 @@
  * Minimal Node.js reproduction of macOS PTY multiline write corruption.
  *
  * On macOS, writing multiline data exceeding ~1024 bytes to a PTY in a single
- * write() call causes old bash (v3.2, shipped with macOS) to corrupt input:
- * content after ~byte 1024 wraps around and replays earlier buffer data,
- * losing the closing delimiter and leaving the shell stuck in `quote>` mode.
+ * write() call corrupts shell input — content after ~byte 1024 wraps and
+ * replays earlier buffer data, losing the closing delimiter and leaving the
+ * shell stuck in `quote>` mode. This affects all interactive shells on macOS
+ * (bash 3.2, bash 5.x, zsh, sh, ksh, dash, csh, tcsh) and does not affect Linux.
  *
  * node-pty ≥1.1.0 works around this by handling EAGAIN via setImmediate, which
  * naturally paces writes. This repro bypasses that by writing directly to the
@@ -16,7 +17,7 @@
  * Command wrapper: `echo '...' | wc -c\n` adds 16 bytes.
  *
  *   18 lines → 1023 bytes (< 1024) → expected to PASS on all platforms
- *   19 lines → 1079 bytes (> 1024) → expected to FAIL on macOS with bash 3.2
+ *   19 lines → 1079 bytes (> 1024) → expected to FAIL on macOS (all shells)
  *
  * Related: https://github.com/microsoft/vscode/issues/296955
  */
