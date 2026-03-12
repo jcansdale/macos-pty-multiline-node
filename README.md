@@ -13,7 +13,7 @@ shot, the kernel's ~1024-byte canonical-mode buffer overflows. Content after
 byte 1024 wraps and replays earlier buffer data — the shell's closing
 delimiter (`'`, `"`, `EOF`) is lost and the shell gets stuck.
 
-This affects **all shells** tested on macOS (bash 3.2, bash 5.x, zsh) and
+This affects **all shells** tested on macOS (bash 3.2, bash 5.x, zsh, sh, ksh, dash, csh, tcsh) and
 does **not** affect Linux.
 
 ## Reproduce
