@@ -88,7 +88,8 @@ function runTest(numLines, shellBin) {
     let output  = '';
     let settled = false;
 
-    // 2-second timeout: if the shell is stuck in quote> mode it will never respond
+    // Timeout: if the shell is stuck in quote> mode it will never respond.
+    // Use 5s to tolerate slower CI runners (shell init takes ~800ms, leaving ~4.2s for output).
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
@@ -97,7 +98,7 @@ function runTest(numLines, shellBin) {
         ? 'shell stuck in quote mode'
         : 'timeout';
       resolve({ ok: false, reason });
-    }, 2000);
+    }, 5000);
 
     shell.onData((data) => {
       output += data;
