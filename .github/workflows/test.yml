@@ -1,0 +1,62 @@
+name: PTY Multiline Write Repro
+
+# Demonstrates macOS PTY corruption when writing multiline data >1024 bytes.
+# Related: https://github.com/microsoft/vscode/issues/296955
+#
+# Matrix axes:
+#   shell   — which shell receives the PTY input
+#   raw_fd  — 1 = fs.writeSync() on raw fd (triggers bug)
+#             0 = shell.write() via node-pty CustomWriteStream (mitigated)
+#
+# Expected outcomes on macOS:
+#   raw_fd=1  → ❌ FAILS for ≥18 lines on all shells (PTY buffer overflow)
+#   raw_fd=0  → ✅ PASSES on all shells (EAGAIN handling paces the writes)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: "${{ matrix.shell-name }} / RAW_FD=${{ matrix.raw_fd }}"
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ── /bin/sh ──────────────────────────────────────────────────────
+          - { shell: /bin/sh,                  shell-name: sh,           raw_fd: '1' }
+          - { shell: /bin/sh,                  shell-name: sh,           raw_fd: '0' }
+          # ── /bin/bash (Apple bash 3.2) ───────────────────────────────────
+          - { shell: /bin/bash,                shell-name: bash-3.2,     raw_fd: '1' }
+          - { shell: /bin/bash,                shell-name: bash-3.2,     raw_fd: '0' }
+          # ── /bin/zsh ─────────────────────────────────────────────────────
+          - { shell: /bin/zsh,                 shell-name: zsh,          raw_fd: '1' }
+          - { shell: /bin/zsh,                 shell-name: zsh,          raw_fd: '0' }
+          # ── Homebrew bash (latest) ────────────────────────────────────────
+          - { shell: /opt/homebrew/bin/bash,   shell-name: bash-homebrew, raw_fd: '1', brew_pkg: bash }
+          - { shell: /opt/homebrew/bin/bash,   shell-name: bash-homebrew, raw_fd: '0', brew_pkg: bash }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Homebrew package
+        if: matrix.brew_pkg != ''
+        run: brew install ${{ matrix.brew_pkg }}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Fix spawn-helper permissions
+        run: find node_modules/node-pty -name spawn-helper -exec chmod +x {} \;
+
+      - name: Run repro
+        env:
+          TEST_SHELL: ${{ matrix.shell }}
+          RAW_FD: ${{ matrix.raw_fd }}
+        run: node repro.js

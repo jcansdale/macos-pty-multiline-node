@@ -1,0 +1,12 @@
+{
+  "name": "macos-pty-multiline-node",
+  "version": "1.0.0",
+  "description": "Node.js reproduction of macOS PTY multiline write corruption (>1024 bytes) — see https://github.com/microsoft/vscode/issues/296955",
+  "main": "repro.js",
+  "scripts": {
+    "start": "node repro.js"
+  },
+  "dependencies": {
+    "node-pty": "microsoft/node-pty#v1.2.0-beta.10"
+  }
+}
